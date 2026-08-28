@@ -1,0 +1,163 @@
+# =====================================================
+# Airbnb Hotel Booking Analysis
+# DIY Project - Data Analysis & Visualization
+# =====================================================
+# Tools: Python, Pandas, NumPy, Matplotlib, Seaborn
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import os
+os.makedirs("outputs", exist_ok=True)
+
+sns.set_style("whitegrid")
+plt.rcParams["figure.figsize"] = (10, 6)
+
+# -----------------------------------------------------
+# 1. LOAD THE DATASET
+# -----------------------------------------------------
+# Replace with the actual path/filename of the dataset you were given.
+df = pd.read_csv("Airbnb_Open_Data.csv")
+
+print("Shape of dataset:", df.shape)
+print(df.head())
+print(df.info())
+
+# -----------------------------------------------------
+# 2. DATA CLEANING
+# -----------------------------------------------------
+# NOTE: Column names vary slightly between Airbnb dataset versions.
+# Adjust the names below (left side) to match your actual CSV headers.
+
+df.rename(columns={
+    "neighbourhood_group": "neighbourhood_group",
+    "neighbourhood": "neighbourhood",
+    "room_type": "room_type",
+    "price": "price",
+    "minimum_nights": "minimum_nights",
+    "number_of_reviews": "number_of_reviews",
+    "availability_365": "availability_365",
+}, inplace=True)
+
+# Drop columns that are mostly identifiers / not useful for analysis
+cols_to_drop = [c for c in ["id", "host_id", "host_name", "last_review"] if c in df.columns]
+df.drop(columns=cols_to_drop, inplace=True)
+
+# Handle missing values
+df["reviews_per_month"] = df.get("reviews_per_month", pd.Series(dtype=float)).fillna(0)
+df.dropna(subset=["name", "price"], inplace=True)
+
+# Remove impossible/outlier values
+df = df[(df["price"] > 0) & (df["price"] < 1000)]
+df = df[df["minimum_nights"] <= 365]
+
+print("\nShape after cleaning:", df.shape)
+print(df.isnull().sum())
+
+# -----------------------------------------------------
+# 3. SUMMARY STATISTICS
+# -----------------------------------------------------
+print("\nSummary statistics:")
+print(df.describe())
+
+print("\nAverage price by room type:")
+print(df.groupby("room_type")["price"].mean().sort_values(ascending=False))
+
+print("\nListing count by neighbourhood group:")
+print(df["neighbourhood_group"].value_counts())
+
+# -----------------------------------------------------
+# 4. VISUALIZATIONS
+# -----------------------------------------------------
+
+# 4.1 Price distribution
+plt.figure()
+sns.histplot(df["price"], bins=50, kde=True, color="coral")
+plt.title("Distribution of Listing Prices")
+plt.xlabel("Price ($)")
+plt.ylabel("Number of Listings")
+plt.tight_layout()
+plt.savefig("outputs/price_distribution.png")
+plt.show()
+
+# 4.2 Room type counts
+plt.figure()
+sns.countplot(data=df, x="room_type", hue="room_type", order=df["room_type"].value_counts().index, palette="viridis", legend=False)
+plt.title("Number of Listings by Room Type")
+plt.xlabel("Room Type")
+plt.ylabel("Count")
+plt.tight_layout()
+plt.savefig("outputs/room_type_counts.png")
+plt.show()
+
+# 4.3 Average price by neighbourhood group
+plt.figure()
+avg_price = df.groupby("neighbourhood_group")["price"].mean().sort_values(ascending=False)
+sns.barplot(x=avg_price.index, y=avg_price.values, hue=avg_price.index, palette="mako", legend=False)
+plt.title("Average Price by Neighbourhood Group")
+plt.xlabel("Neighbourhood Group")
+plt.ylabel("Average Price ($)")
+plt.tight_layout()
+plt.savefig("outputs/avg_price_by_neighbourhood.png")
+plt.show()
+
+# 4.4 Price vs. room type (boxplot)
+plt.figure()
+sns.boxplot(data=df, x="room_type", y="price", hue="room_type", palette="Set2", legend=False)
+plt.title("Price Range by Room Type")
+plt.xlabel("Room Type")
+plt.ylabel("Price ($)")
+plt.tight_layout()
+plt.savefig("outputs/price_by_room_type_boxplot.png")
+plt.show()
+
+# 4.5 Availability vs. price (scatter)
+plt.figure()
+sns.scatterplot(data=df, x="availability_365", y="price", hue="room_type", alpha=0.5)
+plt.title("Availability vs. Price")
+plt.xlabel("Days Available per Year")
+plt.ylabel("Price ($)")
+plt.tight_layout()
+plt.savefig("outputs/availability_vs_price.png")
+plt.show()
+
+# 4.6 Number of reviews vs. price
+plt.figure()
+sns.scatterplot(data=df, x="number_of_reviews", y="price", alpha=0.4, color="teal")
+plt.title("Number of Reviews vs. Price")
+plt.xlabel("Number of Reviews")
+plt.ylabel("Price ($)")
+plt.tight_layout()
+plt.savefig("outputs/reviews_vs_price.png")
+plt.show()
+
+# 4.7 Top 10 neighbourhoods by listing count
+plt.figure()
+top_neighbourhoods = df["neighbourhood"].value_counts().head(10)
+sns.barplot(x=top_neighbourhoods.values, y=top_neighbourhoods.index, hue=top_neighbourhoods.index, palette="crest", legend=False)
+plt.title("Top 10 Neighbourhoods by Number of Listings")
+plt.xlabel("Number of Listings")
+plt.ylabel("Neighbourhood")
+plt.tight_layout()
+plt.savefig("outputs/top_neighbourhoods.png")
+plt.show()
+
+# 4.8 Correlation heatmap
+plt.figure()
+numeric_cols = df.select_dtypes(include=[np.number])
+sns.heatmap(numeric_cols.corr(), annot=True, cmap="coolwarm", fmt=".2f")
+plt.title("Correlation Heatmap of Numeric Features")
+plt.tight_layout()
+plt.savefig("outputs/correlation_heatmap.png")
+plt.show()
+
+# -----------------------------------------------------
+# 5. KEY INSIGHTS (print summary to console)
+# -----------------------------------------------------
+print("\n--- KEY INSIGHTS ---")
+print(f"Most common room type: {df['room_type'].mode()[0]}")
+print(f"Priciest neighbourhood group on average: {avg_price.idxmax()} (${avg_price.max():.2f})")
+print(f"Cheapest neighbourhood group on average: {avg_price.idxmin()} (${avg_price.min():.2f})")
+print(f"Overall average price: ${df['price'].mean():.2f}")
+print(f"Overall median price: ${df['price'].median():.2f}")
