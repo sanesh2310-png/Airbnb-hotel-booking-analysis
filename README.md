@@ -69,6 +69,4 @@ python airbnb_analysis.py
 - Listings with more reviews tend to cluster in the lower-to-mid price range, suggesting affordability drives booking volume.
 - Availability throughout the year shows no strong linear relationship with price on its own.
 
-## Demo Link
 
-[GitHub Repository](#) <!-- paste your repo link here, and in your PPT -->
